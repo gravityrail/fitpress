@@ -19,12 +19,19 @@ The hope is that eventually this plugin will provide the following functionality
 
 == Installation ==
 
+*NOTE:* This plugin *requires* the PECL Oauth Plugin. 
+
+On Debian or Ubuntu, run this command: `sudo apt-get install php5-oauth`.
+
+On other operating systems you'll need to figure it out for yourself. Full instructions on the oauth module here: http://php.net/manual/en/book.oauth.php
+
 1. Save this plugin in your wp-content/plugins directory
 1. Activate the plugin through the 'Plugins' menu in WordPress
 
 == Changelog ==
 
 = 0.1 =
+
 Non-functional version with settings and dependencies only
 
 == Credits ==

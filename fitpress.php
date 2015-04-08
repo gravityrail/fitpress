@@ -30,7 +30,42 @@ Class FitPress {
 		add_action('show_user_profile', array($this, 'fitpress_linked_accounts'));
 		add_action('admin_post_fitpress_auth', array($this, 'fitpress_auth'));
 		add_action('admin_post_fitpress_auth_callback', array($this, 'fitpress_auth_callback'));
+		add_action('admin_post_fitpress_auth_unlink', array($this, 'fitpress_auth_unlink'));
+		add_shortcode( 'fitbit', array($this, 'fitpress_shortcode') );
 	}
+
+	/**
+	 * Shortcodes
+	 **/ 
+
+	//[fitbit]
+	function fitpress_shortcode( $atts ){
+		$a = shortcode_atts( array(
+		    'foo' => 'something',
+		    'bar' => 'something else',
+		), $atts );
+
+		$fitbit = $this->get_fitbit_client();
+
+		$post = get_post(get_the_ID());
+		$date = mysql2date('Y-m-d', $post->post_date);
+
+		try {
+			//test - for now, output heart rate
+			$heart_rates = $fitbit->getHeartRate(null,$date)->average[0];
+			$output = '<dl>';
+			foreach ($heart_rates->heartAverage as $heartAverage) {
+				$title = $heartAverage->tracker->asXML();
+				$value = $heartAverage->heartRate->asXML();
+				$output .= "<dt>{$title}</dt><dd>{$value}</dd>";
+			}
+			$output .= '</dl>';
+			return $output;
+		} catch(Exception $e) {
+			return print_r($e->getMessage(), true);//;
+		}
+	}
+
 
 	/**
 	 * CSS and javascript
@@ -45,38 +80,90 @@ Class FitPress {
 	 **/
 
 	function fitpress_linked_accounts() {
-		// get the current user:
-		global $current_user;
-		get_currentuserinfo();
-		$user_id = $current_user->ID;
-		// get the wpoa_identity records:
-		global $wpdb;
-		$usermeta_table = $wpdb->usermeta;
-		$query_string = "SELECT meta_value FROM $usermeta_table WHERE $user_id = $usermeta_table.user_id AND $usermeta_table.meta_key = 'fitpress_identity' limit 1";
-		$oauth_id = $wpdb->get_var($query_string);
+		$user_id = get_current_user_id();
+
+		$fitpress_credentials = get_user_meta($user_id, 'fitpress_credentials', true);
+		$last_error = get_user_meta($user_id, 'fitpress_last_error', true);
+
 		// list the wpoa_identity records:
 		echo "<div id='fitpress-linked-accounts'>";
 		echo "<h3>FitBit Account</h3>";
-		if ( ! $oauth_id ) {
+		if ( ! $fitpress_credentials ) {
 			echo "<p>You have not linked your FitBit account.</p>";
 			echo $this->fitpress_login_button();
 		} else {
-			echo "<p>Linked with ID {$oauth_id}";
+			$unlink_url = admin_url('admin-post.php?action=fitpress_auth_unlink');
+			$cred_str = print_r($fitpress_credentials, true);
+			echo "<p>Linked with ID {$cred_str} - <a href='{$unlink_url}'>Unlink</a>";
 		}
+		if ( $last_error ) {
+			echo "<p>There was an error connecting your account: {$last_error}</p>";
+		}
+
 		echo "</div>";
+	}
+
+	function get_fitbit_client() {
+		require 'fitbitphp/fitbitphp.php';
+		$user_id = get_current_user_id();
+		$client = new FitBitPHP(get_option('fitpress_api_id'), get_option('fitpress_api_secret'));
+		$fitpress_credentials = get_user_meta( $user_id, 'fitpress_credentials', true );
+
+		// if we have credentials, use them
+		if ( $fitpress_credentials ) {
+			$client->setOAuthDetails($fitpress_credentials['token'], $fitpress_credentials['secret']);
+		} elseif ( $client->sessionStatus() == 2 ) {
+			// store new credentials
+			$fitpress_credentials = array(
+				'token' => $_SESSION['fitbit_Token'],
+				'secret' => $_SESSION['fitbit_Secret']
+			);
+
+			update_user_meta( get_current_user_id(), 'fitpress_credentials', $fitpress_credentials );
+		}
+		return $client;
 	}
 
 	//redirect out to FitBit API
 	function fitpress_auth() {
-		include 'PHPoAuthLib/src/OAuth/bootstrap.php';
-		include 'fitbitphp/lib/Fitbit/Api.php';
+		try {
+			$client = $this->fitpress_init_session();
+			delete_user_meta( $user_id, 'fitpress_last_error' );
+			if ( $client->sessionStatus() == 2 ) {
+				// already authenticated
+				wp_redirect( get_edit_user_link( get_current_user_id() ), 301 );
+				exit;	
+			}
+		} catch(OAuthException $e) {
+			error_log($e->getMessage());
+			update_user_meta( $user_id, 'fitpress_last_error', $e->getMessage() );
+			wp_redirect( get_edit_user_link( get_current_user_id() ), 301 );
+			exit;
+		}
+	}
+
+	function fitpress_auth_unlink() {
+		$user_id = get_current_user_id();
+		delete_user_meta( $user_id, 'fitpress_credentials' );
+		wp_redirect( get_edit_user_link( $user_id ), 301 );
+		exit;
+	}
+
+	function fitpress_init_session() {
 		$redirect_url = admin_url('admin-post.php?action=fitpress_auth_callback');
-		$api = new \Fitbit\Api(get_option('fitpress_api_id'), get_option('fitpress_api_secret'), $redirect_url);
-		$api->initSession();
+		$client = $this->get_fitbit_client();
+		$result = $client->initSession($redirect_url);
+		if ( $result == 2 ) {
+
+		}
+		return $client;
 	}
 
 	function fitpress_auth_callback() {
-
+		$user_id = get_current_user_id();
+		$client = $this->fitpress_init_session();
+		wp_redirect( get_edit_user_link( $user_id ), 301 );
+		exit;
 	}
 
 	function fitpress_login_button() {
