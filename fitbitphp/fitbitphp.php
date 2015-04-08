@@ -1651,8 +1651,6 @@ class FitBitPHP
      */
     public function getHeartRate($date, $dateStr = null)
     {
-        // error_log("Debug: ".$this->oauthToken);
-        // error_log("Debug: ".$this->oauthSecret);
         $headers = $this->getHeaders();
         if (!isset($dateStr)) {
             $dateStr = $date->format('Y-m-d');
@@ -1770,7 +1768,7 @@ class FitBitPHP
      * @return array
      */
     public function getTimeSeries($type, $basedate, $to_period)
-    {
+    {        
 
         switch ($type) {
             case 'caloriesIn':
@@ -1869,8 +1867,11 @@ class FitBitPHP
 
 
         $headers = $this->getHeaders();
+        $period_str = (is_string($to_period) ? $to_period : $to_period->format('Y-m-d'));
+        $basedate_str = (is_string($basedate) ? $basedate : $basedate->format('Y-m-d'));
+
         try {
-            $this->oauth->fetch($this->baseApiUrl . "user/" . $this->userId . $path . '/date/' . (is_string($basedate) ? $basedate : $basedate->format('Y-m-d')) . "/" . (is_string($to_period) ? $to_period : $to_period->format('Y-m-d')) . ".json", null, OAUTH_HTTP_METHOD_GET, $headers);
+            $this->oauth->fetch($this->baseApiUrl . "user/" . $this->userId . $path . '/date/' . $basedate_str . "/" . $period_str . ".json", null, OAUTH_HTTP_METHOD_GET, $headers);
         } catch (Exception $E) {
         }
         $response = $this->oauth->getLastResponse();

@@ -31,28 +31,29 @@ Class FitPress {
 		add_action('admin_post_fitpress_auth', array($this, 'fitpress_auth'));
 		add_action('admin_post_fitpress_auth_callback', array($this, 'fitpress_auth_callback'));
 		add_action('admin_post_fitpress_auth_unlink', array($this, 'fitpress_auth_unlink'));
-		add_shortcode( 'fitbit', array($this, 'fitpress_shortcode') );
+		// add_shortcode( 'fitbit', array($this, 'fitpress_shortcode') );
+		add_shortcode( 'heartrate', array($this, 'fitpress_shortcode_heartrate') );
+		add_shortcode( 'steps', array($this, 'fitpress_shortcode_steps') );
+		wp_register_script( 'jsapi', 'https://www.google.com/jsapi' );
+		add_action( 'wp_enqueue_scripts', array($this, 'fitpress_scripts') );
+	}
+
+	function fitpress_scripts() {
+		wp_enqueue_script( 'jsapi' );
 	}
 
 	/**
 	 * Shortcodes
 	 **/ 
 
-	//[fitbit]
-	function fitpress_shortcode( $atts ){
-		$a = shortcode_atts( array(
-		    'foo' => 'something',
-		    'bar' => 'something else',
-		), $atts );
+	//[heartrate]
+	function fitpress_shortcode_heartrate( $atts ){
+		$atts = $this->fitpress_shortcode_base( $atts );
 
 		$fitbit = $this->get_fitbit_client();
-
-		$post = get_post(get_the_ID());
-		$date = mysql2date('Y-m-d', $post->post_date);
-
+		error_log(print_r($atts, true));
 		try {
-			//test - for now, output heart rate
-			$heart_rates = $fitbit->getHeartRate(null,$date)->average[0];
+			$heart_rates = $fitbit->getHeartRate($atts['date'])->average[0];
 			$output = '<dl>';
 			foreach ($heart_rates->heartAverage as $heartAverage) {
 				$title = $heartAverage->tracker->asXML();
@@ -62,8 +63,71 @@ Class FitPress {
 			$output .= '</dl>';
 			return $output;
 		} catch(Exception $e) {
-			return print_r($e->getMessage(), true);//;
+			return print_r($e->getMessage(), true);
 		}
+	}
+
+	//[steps]
+	function fitpress_shortcode_steps( $atts ){
+		$atts = $this->fitpress_shortcode_base( $atts );
+
+		$fitbit = $this->get_fitbit_client();
+
+		try {
+			$steps = $fitbit->getTimeSeries('steps', $atts['date'], '7d');
+
+			array_walk($steps, function (&$v, $k) { $v = array($v->dateTime, intval($v->value)); });
+
+			// add header
+			array_unshift($steps, array('Date', 'Steps'));
+
+			$steps_json = json_encode($steps);
+
+			$output = '';
+			$output .= <<<ENDHTML
+<script type="text/javascript">
+	google.load('visualization', '1.0', {'packages':['corechart', 'bar']});
+	google.setOnLoadCallback(function() {
+		var data = google.visualization.arrayToDataTable({$steps_json});
+		var options = {
+	        title: 'Steps per day',
+	        hAxis: {
+	          title: 'Date',
+	          format: 'Y-m-d'
+	        },
+	        vAxis: {
+	          title: 'Steps'
+	        }
+	    };
+	    var chart = new google.visualization.ColumnChart(document.getElementById('chart_div'));
+	    chart.draw(data, options);
+	});
+
+</script>
+<div id="chart_div"></div>
+ENDHTML;
+
+			// $output = print_r($steps, true);
+			return $output;
+		} catch(Exception $e) {
+			return print_r($e->getMessage(), true);
+		}
+	}
+
+	// common functionality for shortcodes
+	function fitpress_shortcode_base( $atts ) {
+		$atts = shortcode_atts( array(
+		    'date' => null
+		), $atts );
+
+		// we only compute this if not supplied because it's expensive to compute
+		if ( $atts['date'] == null ) {
+			$post = get_post(get_the_ID());
+			$atts['date'] = new DateTime($post->post_date);
+			error_log("Reparsed date from ".$post->post_date." to ".print_r($atts['date'], true));
+		}
+
+		return $atts;
 	}
 
 
@@ -104,7 +168,7 @@ Class FitPress {
 	}
 
 	function get_fitbit_client() {
-		require 'fitbitphp/fitbitphp.php';
+		include_once('fitbitphp/fitbitphp.php');
 		$user_id = get_current_user_id();
 		$client = new FitBitPHP(get_option('fitpress_api_id'), get_option('fitpress_api_secret'));
 		$fitpress_credentials = get_user_meta( $user_id, 'fitpress_credentials', true );
