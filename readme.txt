@@ -11,11 +11,18 @@ Publish your FitBit statistics on your WordPress blog.
 
 == Description ==
 
+Currently:
+
+* A shortcode for "heartrate" which takes a "date" parameter and prints a simple list of time spent in each heart rate zone for the day
+* A shortcode for "steps" which prints a graph of steps taken over a 7 day period before the given "date"
+
+See the "Usage" section for an example.
+
 The hope is that eventually this plugin will provide the following functionality:
 
 * Sidebar Widgets which display fitness statistics (e.g. heart rate over time)
 * Post types which post to FitBit, e.g. meals
-* Shortcodes to include in posts which show specific stats, e.g. heart rate zones on a certain date
+* Shortcodes to include graphs and tables of fitbit data in posts
 
 == Installation ==
 
@@ -24,7 +31,8 @@ The hope is that eventually this plugin will provide the following functionality
 
 == Usage ==
 
-In any post:
+1. Connect the FitBit account for your user account by clicking "Link my FitBit Account" at the bottom of your profile page.
+1. In any post:
 
 ```
 My heart rate: [heartrate date="2015-12-04"]
