@@ -15,14 +15,22 @@ The hope is that eventually this plugin will provide the following functionality
 
 * Sidebar Widgets which display fitness statistics (e.g. heart rate over time)
 * Post types which post to FitBit, e.g. meals
-* Shortcodes to include in posts which show specific stats, e.g. heart rate at a certain time
-
-== New Installation ==
+* Shortcodes to include in posts which show specific stats, e.g. heart rate zones on a certain date
 
 == Installation ==
 
 1. Save this plugin in your wp-content/plugins directory
 1. Activate the plugin through the 'Plugins' menu in WordPress
+
+== Usage ==
+
+In any post:
+
+```
+My heart rate: [heartrate date="2015-12-04"]
+
+Steps: [steps date="2015-12-04"]
+```
 
 == Changelog ==
 
