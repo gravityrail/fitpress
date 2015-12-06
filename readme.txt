@@ -1,8 +1,8 @@
 === FitPress ===
 Contributors: Daniel Walmsley
-Tags: fitness, fitpress
+Tags: fitness, fitpress, fitbit
 Requires at least: 3.0.1
-Tested up to: 3.4
+Tested up to: 4.1
 Stable tag: 4.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
@@ -17,18 +17,18 @@ The hope is that eventually this plugin will provide the following functionality
 * Post types which post to FitBit, e.g. meals
 * Shortcodes to include in posts which show specific stats, e.g. heart rate at a certain time
 
+== New Installation ==
+
 == Installation ==
-
-*NOTE:* This plugin *requires* the PECL Oauth Plugin. 
-
-On Debian or Ubuntu, run this command: `sudo apt-get install php5-oauth`.
-
-On other operating systems you'll need to figure it out for yourself. Full instructions on the oauth module here: http://php.net/manual/en/book.oauth.php
 
 1. Save this plugin in your wp-content/plugins directory
 1. Activate the plugin through the 'Plugins' menu in WordPress
 
 == Changelog ==
+
+= 0.2 =
+
+Switch to simple pure-PHP OAuth2 implementation
 
 = 0.1 =
 
@@ -36,8 +36,7 @@ Non-functional version with settings and dependencies only
 
 == Credits ==
 
-This plugin is a thin wrapper around other people's work:
+This plugin was originally a thin wrapper around other people's work, but has now evolved significantly. Nevertheless, credit where credit is due to these awesome projects:
 
 * [FitbitPHP](https://github.com/heyitspavel/fitbitphp) by *heyitspavel*
 * [PHPoAuthLib](https://github.com/Lusitanian/PHPoAuthLib) by [David Desberg](https://daviddesberg.com/)
-
