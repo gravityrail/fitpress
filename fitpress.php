@@ -162,7 +162,7 @@ ENDHTML;
 			echo "<p>Linked account {$name} - <a href='{$unlink_url}'>Unlink</a>";
 			update_option( 'fitpress_user', $user_id );
 		}
-		if ( $lasteerror ) {
+		if ( $last_error ) {
 			echo "<p>There was an error connecting your account: {$last_error}</p>";
 		}
 
