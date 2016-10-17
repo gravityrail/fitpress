@@ -155,13 +155,14 @@ ENDHTML;
 		echo "<h3>FitBit Account</h3>";
 		if ( ! $fitpress_credentials ) {
 			echo "<p>You have not linked your FitBit account.</p>";
-			echo $this->fitpress_login_button();
+			echo esc_html($this->fitpress_login_button());
 		} else {
 			$unlink_url = admin_url('admin-post.php?action=fitpress_auth_unlink');
 			$name = $fitpress_credentials['name'];
 			echo "<p>Linked account {$name} - <a href='{$unlink_url}'>Unlink</a>";
+			update_option( 'fitpress_user', $user_id );
 		}
-		if ( $last_error ) {
+		if ( $lasteerror ) {
 			echo "<p>There was an error connecting your account: {$last_error}</p>";
 		}
 
@@ -170,14 +171,14 @@ ENDHTML;
 
 	private function get_fitbit_oauth2_client() {
 		require_once('fitpress-oauth2-client.php');
-		$user_id = get_current_user_id();
+		$user_id = get_option('fitpress_user');
 		$redirect_url = admin_url('admin-post.php?action=fitpress_auth_callback');
 		return  new FitBit_OAuth2_Client(get_option('fitpress_api_id'), get_option('fitpress_api_secret'), $redirect_url, FITPRESS_CLIENT_STATE_KEY);
 	}
 
 	function get_fitbit_client( $access_token = null ) {
 		require_once('fitpress-oauth2-client.php');
-		$user_id = get_current_user_id();
+		$user_id = get_option('fitpress_user');
 		$fitpress_credentials = get_user_meta( $user_id, 'fitpress_credentials', true );
 
 		if ( ! $access_token && $fitpress_credentials ) {
@@ -241,6 +242,7 @@ ENDHTML;
 		register_setting('fitpress_settings', 'fitpress_api_id');
 		register_setting('fitpress_settings', 'fitpress_api_secret');
 		register_setting('fitpress_settings', 'fitpress_token_override');
+		register_setting('fitpress_settings', 'fitpress_user');
 	}
 
 	// add the main settings page:
